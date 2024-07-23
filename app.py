@@ -47,7 +47,7 @@ postFields = {
     "title":fields.String,
     "content":fields.String,
     "created_at":fields.DateTime,
-    "author":fields.String(attribute="author_username"),
+    "author":fields.String(attribute="author.username"),
 }
 
 class Users(Resource):
@@ -113,10 +113,43 @@ class Posts(Resource):
         db.session.add(newpost)
         db.session.commit()
         return newpost,201
+    
+
+class Post(Resource):
+    @marshal_with(postFields)
+    def get(self, id):
+        post = PostModel.query.filter_by(id=id).first()
+        if not post:
+            abort(404, message=f"Post with ID {id} not found")
+        return post, 200
+    
+    @marshal_with(postFields)
+    def patch(self, id):
+        post = PostModel.query.filter_by(id=id).first()
+        if not post:
+            abort(404, message=f"Post with ID {id} not found")
+        args = posts_args.parse_args()
+        post.title = args['title']
+        post.content = args['content']
+        db.session.commit()
+        return post, 200
+    
+    @marshal_with(postFields)
+    def delete(self, id):
+        post = PostModel.query.filter_by(id=id).first()
+        if not post:
+            abort(404, message=f"Post with ID {id} not found")
+        db.session.delete(post)
+        db.session.commit()
+        posts = PostModel.query.all()
+        return posts, 200
+
+
 
 api.add_resource(Posts,"/posts/")
 api.add_resource(Users,"/users/")
 api.add_resource(User,"/users/<int:id>")
+api.add_resource(Post,"/posts/<int:id>")
 
 @app.route('/')
 def home():
